@@ -1,0 +1,38 @@
+.sensor-chart {
+  margin-top: 20px;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.sensor-chart h3 {
+  color: #333;
+  font-size: 18px;
+  margin: 0;
+}
+
+.data-count {
+  font-size: 12px;
+  color: #666;
+  background-color: #f0f0f0;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.chart-loading,
+.chart-empty {
+  padding: 40px;
+  text-align: center;
+  color: #666;
+}
+
+.chart-empty {
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  border: 1px dashed #ddd;
+}
+
