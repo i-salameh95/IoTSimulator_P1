@@ -10,7 +10,7 @@ router = APIRouter()
 
 
 @router.post("/run-cycle", response_model=dict)
-async def run_single_cycle():
+def run_single_cycle():
     """
     Run a single simulation cycle
     Sensors send data → Central computer analyzes → Actuators respond
@@ -32,8 +32,10 @@ async def run_single_cycle():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# Sync (non-async) endpoint: FastAPI runs it in a worker thread, so the
+# time.sleep between cycles does not block the event loop.
 @router.post("/run", response_model=dict)
-async def run_simulation(
+def run_simulation(
     num_cycles: int = Query(20, ge=1, le=100),
     delay_seconds: float = Query(1.0, ge=0.1, le=10.0)
 ):

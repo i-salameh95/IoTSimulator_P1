@@ -45,6 +45,9 @@ frontend/.env
 # Docker
 *.log
 
+# Generated scheduler state
+backend/celerybeat-schedule*
+
 # OS
 .DS_Store
 Thumbs.db

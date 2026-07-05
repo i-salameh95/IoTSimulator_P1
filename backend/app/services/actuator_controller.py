@@ -216,7 +216,3 @@ class ActuatorController:
     def get_actuator_states(self) -> Dict[str, str]:
         """Get current state of all actuators"""
         return self.actuators.copy()
-
-
-# Global instance
-actuator_controller = ActuatorController()

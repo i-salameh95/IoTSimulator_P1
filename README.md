@@ -45,7 +45,7 @@ IoT Devices (simulated) ─┐
 | Backend      | Python 3.11+/FastAPI, Pydantic, Uvicorn                        |
 | Storage      | MongoDB (primary), UTF‑8 CSV fallback (sensor/actuator/logs)   |
 | Frontend     | React 18, Axios, Recharts, CRA tooling                         |
-| Tooling      | Docker Compose, Node 18, npm, unittest, curl/Postman           |
+| Tooling      | Docker Compose, Node 18, npm, curl/Postman                     |
 
 ---
 
@@ -59,10 +59,8 @@ IoTSimulator_P1/
 │   │   ├── core/               # config, Mongo/CSV services, logger
 │   │   ├── models/             # Pydantic schemas
 │   │   ├── services/           # sensor simulator, controller, engine
-│   │   ├── tasks/              # aggregation/rule task placeholders
 │   │   └── main.py             # FastAPI entry point
 │   ├── storage/                # CSV fallback output (generated)
-│   ├── tests/                  # Sensor + controller unit tests
 │   ├── scripts/                # Utility helpers (e.g., data generation)
 │   ├── Dockerfile
 │   └── requirements.txt
@@ -109,16 +107,21 @@ IoTSimulator_P1/
 - **LogsDisplay** auto-refreshes controller/sensor logs with filters.
 - **SensorChart** visualizes historical data via Recharts.
 
+---
+
 ## 6. Operating Modes (How to Run)
 
 ### Option A – Docker Compose (full stack)
 ```bash
-docker-compose up -d
+cp .env.example .env          # Windows: copy .env.example .env
+# Edit .env and choose local-only credentials.
+docker compose up -d
+docker compose ps             # verify all services are Up
 ```
 Services exposed:
 - Frontend: http://localhost:3000
 - Backend/API docs: http://localhost:8000/docs
-- Mongo Express: http://localhost:8081 (admin/admin123)
+- Mongo Express: http://localhost:8081 (credentials from `.env`)
 
 ### Option B – Local dev with CSV fallback (no Docker required)
 **Backend**
@@ -139,13 +142,6 @@ REACT_APP_API_URL=http://localhost:9000 npm start   # or set in .env
 
 **Generate data**: trigger `POST /api/v1/simulation/run-cycle` or use the dashboard buttons. Inspect `backend/storage/{sensor_readings,actuator_states,logs}.csv` for results.
 
-### Option C – Tests & tooling
-```bash
-cd backend
-.venv\Scripts\activate
-python -m unittest discover backend/tests
-```
-
 ---
 
 ## 7. API Quick Reference
@@ -154,12 +150,15 @@ python -m unittest discover backend/tests
 | --- | --- |
 | `POST /api/v1/simulation/run-cycle` | One full cycle (sensors → controller → actuators). |
 | `POST /api/v1/simulation/run?num_cycles=N&delay_seconds=S` | Batch cycles with delay. |
-| `POST /api/v1/sensors/ingest` | Manually push readings (for tests or integrations). |
+| `POST /api/v1/sensors/ingest` | Manually push a reading (for tests or integrations). |
+| `POST /api/v1/sensors/ingest/batch` | Push multiple readings at once. |
 | `POST /api/v1/sensors/query/historical` | Historical data (supports measurement/device filters). |
 | `POST /api/v1/sensors/query/aggregated` | Windowed aggregations (`mean/max/min/sum`). |
 | `GET /api/v1/sensors/measurements` | Available measurement types. |
+| `GET /api/v1/sensors/devices` | Known device IDs. |
 | `GET /api/v1/actuators/states` | Full actuator history (chronological). |
 | `GET /api/v1/actuators/states/current` | Latest state per actuator. |
+| `POST /api/v1/actuators/control` | Manually set an actuator state. |
 | `GET /api/v1/logs/` | System logs with level/source/device filters. |
 
 *When running in CSV mode, these endpoints read/write the CSV files transparently.*
@@ -189,16 +188,16 @@ Delete these files to start fresh; the backend will recreate them automatically.
 
 ## 10. Development Notes & Future Work
 
-- **Future ideas**: integrate real devices over MQTT, introduce Celery/Redis-backed rule evaluation and analytics, add AI-driven decision modules, and support physical actuator overrides.
-- **Testing**: current suite validates sensor ranges and rule logic; expand with API-level tests as needed.
-- **Performance**: MongoDB indexes cover measurement/device/sensor queries; aggregation pipeline + Celery tasks prepare future analytics.
+- **Future ideas**: integrate real devices over MQTT, add background rule evaluation and analytics, add AI-driven decision modules, and support physical actuator overrides.
+- **Testing**: no automated tests yet; validate via the API docs (`/docs`) or the dashboard, and add unit/API tests as needed.
+- **Performance**: MongoDB indexes cover measurement/device/sensor queries; the aggregation endpoint provides windowed summaries.
 
 ---
 
 ## 11. Support / References
 
 - API docs live at `/docs` (Swagger UI) once the backend is running.
-- Mongo Express credentials: admin/admin123.
+- Mongo Express credentials are read from `.env`; do not commit that file.
 - For CSV mode troubleshooting: ensure UTF‑8 CSV files and delete stale ANSI files if the logger endpoints raise encoding errors.
 
 ---
