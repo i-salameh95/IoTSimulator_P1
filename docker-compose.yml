@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # MongoDB - Document database for sensor data
   mongodb:
@@ -8,9 +6,9 @@ services:
     ports:
       - "27017:27017"
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=admin123
-      - MONGO_INITDB_DATABASE=iot_data
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME:?set MONGO_ROOT_USERNAME in .env}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD:?set MONGO_ROOT_PASSWORD in .env}
+      - MONGO_INITDB_DATABASE=${MONGO_DATABASE:-iot_data}
     volumes:
       - mongodb_data:/data/db
     networks:
@@ -21,27 +19,19 @@ services:
   mongo-express:
     image: mongo-express:1.0.0
     container_name: iot_mongo_express
+    # mongo-express exits if MongoDB isn't accepting connections yet;
+    # restart until the database is ready.
+    restart: unless-stopped
     ports:
       - "8081:8081"
     environment:
-      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
-      - ME_CONFIG_MONGODB_ADMINPASSWORD=admin123
-      - ME_CONFIG_MONGODB_URL=mongodb://admin:admin123@mongodb:27017/
-      - ME_CONFIG_BASICAUTH_USERNAME=admin
-      - ME_CONFIG_BASICAUTH_PASSWORD=admin123
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=${MONGO_ROOT_USERNAME:?set MONGO_ROOT_USERNAME in .env}
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=${MONGO_ROOT_PASSWORD:?set MONGO_ROOT_PASSWORD in .env}
+      - ME_CONFIG_MONGODB_URL=mongodb://${MONGO_ROOT_USERNAME:?set MONGO_ROOT_USERNAME in .env}:${MONGO_ROOT_PASSWORD:?set MONGO_ROOT_PASSWORD in .env}@mongodb:27017/
+      - ME_CONFIG_BASICAUTH_USERNAME=${MONGO_EXPRESS_BASICAUTH_USERNAME:?set MONGO_EXPRESS_BASICAUTH_USERNAME in .env}
+      - ME_CONFIG_BASICAUTH_PASSWORD=${MONGO_EXPRESS_BASICAUTH_PASSWORD:?set MONGO_EXPRESS_BASICAUTH_PASSWORD in .env}
     depends_on:
       - mongodb
-    networks:
-      - iot_network
-
-  # Redis - Cache and message broker for Celery
-  redis:
-    image: redis:7-alpine
-    container_name: iot_redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
     networks:
       - iot_network
 
@@ -54,63 +44,15 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - MONGODB_URL=mongodb://admin:admin123@mongodb:27017/iot_data?authSource=admin
-      - MONGODB_DATABASE=iot_data
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - MONGODB_URL=mongodb://${MONGO_ROOT_USERNAME:?set MONGO_ROOT_USERNAME in .env}:${MONGO_ROOT_PASSWORD:?set MONGO_ROOT_PASSWORD in .env}@mongodb:27017/${MONGO_DATABASE:-iot_data}?authSource=admin
+      - MONGODB_DATABASE=${MONGO_DATABASE:-iot_data}
     volumes:
       - ./backend:/app
     depends_on:
       - mongodb
-      - redis
     networks:
       - iot_network
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-
-  # Celery Worker
-  celery_worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: iot_celery_worker
-    environment:
-      - MONGODB_URL=mongodb://admin:admin123@mongodb:27017/iot_data?authSource=admin
-      - MONGODB_DATABASE=iot_data
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-    volumes:
-      - ./backend:/app
-    depends_on:
-      - mongodb
-      - redis
-      - backend
-    networks:
-      - iot_network
-    command: celery -A app.tasks.celery_app worker --loglevel=info
-
-  # Celery Beat (Scheduler)
-  celery_beat:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: iot_celery_beat
-    environment:
-      - MONGODB_URL=mongodb://admin:admin123@mongodb:27017/iot_data?authSource=admin
-      - MONGODB_DATABASE=iot_data
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-    volumes:
-      - ./backend:/app
-    depends_on:
-      - mongodb
-      - redis
-      - backend
-    networks:
-      - iot_network
-    command: celery -A app.tasks.celery_app beat --loglevel=info
 
   # React Frontend
   frontend:
@@ -121,7 +63,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8000}
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -132,7 +74,6 @@ services:
 
 volumes:
   mongodb_data:
-  redis_data:
 
 networks:
   iot_network:

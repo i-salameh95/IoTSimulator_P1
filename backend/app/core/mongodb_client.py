@@ -30,6 +30,8 @@ class MongoDBService:
             self.collection.create_index([("device_id", 1), ("timestamp", -1)])
             self.collection.create_index([("sensor_id", 1), ("timestamp", -1)])
             self.collection.create_index("timestamp")
+            self.db.actuator_states.create_index([("actuator_id", 1), ("timestamp", -1)])
+            self.db.actuator_states.create_index("timestamp")
             self.available = True
         except PyMongoError:
             self.client = None
@@ -278,11 +280,7 @@ class MongoDBService:
             return
         
         collection = self.db.actuator_states
-        
-        # Create indexes
-        collection.create_index([("actuator_id", 1), ("timestamp", -1)])
-        collection.create_index("timestamp")
-        
+
         document = {
             "actuator_id": actuator_state.actuator_id,
             "device_id": actuator_state.device_id,

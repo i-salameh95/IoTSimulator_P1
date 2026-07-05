@@ -3,7 +3,7 @@ Script to generate test sensor data for Phase 1
 """
 import sys
 import time
-import requests
+import httpx
 from app.services.simulator import sensor_simulator
 
 API_URL = "http://localhost:8000/api/v1"
@@ -30,7 +30,7 @@ def generate_test_data(count=50):
     
     # Ingest batch
     try:
-        response = requests.post(
+        response = httpx.post(
             f"{API_URL}/sensors/ingest/batch",
             json=readings
         )

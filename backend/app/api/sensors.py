@@ -18,10 +18,7 @@ router = APIRouter()
 @router.post("/ingest", response_model=dict, status_code=201)
 async def ingest_sensor_data(reading: SensorReading):
     """
-    Ingest sensor data into MongoDB
-    
-    In Phase 1: Simulated data
-    In Phase 2: Data from MQTT devices
+    Ingest sensor data into MongoDB (simulated in Phase 1)
     """
     try:
         mongodb_service.write_sensor_data(
